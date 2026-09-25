@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="210" height="132" viewBox="0 0 210 132">
+  <ellipse cx="105" cy="123" rx="84" ry="6" fill="#493725" opacity=".22"/>
+  <rect x="20" y="50" width="170" height="65" rx="3" fill="#b66f42" stroke="#5a3b2c" stroke-width="3"/>
+  <path d="M12 52 L198 52 L184 18 L26 18 Z" fill="#6f3c2b" stroke="#4c3027" stroke-width="3"/>
+  <path d="M24 20 H186" stroke="#e3c48d" stroke-width="10" stroke-dasharray="18 12"/>
+  <rect x="36" y="69" width="34" height="28" fill="#8f613d" stroke="#5f402e" stroke-width="2"/>
+  <ellipse cx="53" cy="78" rx="9" ry="6" fill="#c96f27"/>
+  <ellipse cx="53" cy="90" rx="8" ry="5" fill="#d8ab4e"/>
+  <rect x="80" y="69" width="98" height="29" rx="4" fill="#f3dfbd" opacity=".92"/>
+  <text x="129" y="88" font-size="13" text-anchor="middle" font-family="Georgia, serif" font-weight="700" fill="#5c3b2b">PUMPKINS</text>
+</svg>
