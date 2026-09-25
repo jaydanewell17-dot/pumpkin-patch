@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
-  <meta name="theme-color" content="#171310" />
-  <title>Pumpkin Patch & Fall Festival</title>
+  <meta name="theme-color" content="#241b17" />
+  <title>Pumpkin Patch & Fall Festival — Stage 2</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -18,14 +18,20 @@
       <div class="hud-card"><span class="hud-label">Pumpkins</span><strong id="pumpkin-value">0</strong></div>
     </section>
 
+    <section class="festival-status" aria-live="polite">
+      <span id="festival-dot" class="status-dot"></span>
+      <span id="festival-status">Festival opens at 10:00 AM</span>
+    </section>
+
     <section id="message" class="message" role="status"></section>
 
     <section class="instruction" aria-label="Touch controls">
-      <div class="instruction-title">EXPLORE THE PATCH</div>
-      <div class="instruction-copy">Swipe to look around. Tap pumpkins to harvest them.</div>
+      <div class="instruction-title">EXPLORE THE FESTIVAL</div>
+      <div id="instruction-copy" class="instruction-copy">Swipe to look around. Tap stalls, signs, pumpkins, and guests.</div>
     </section>
 
-    <button id="focus-button" class="focus-button" type="button" aria-label="Center the view on the pumpkin patch">Patch</button>
+    <button id="home-button" class="round-button" type="button" aria-label="Return to your house">Home</button>
+    <button id="patch-button" class="round-button patch" type="button" aria-label="Center the view on the pumpkin patch">Patch</button>
   </main>
 
   <script src="game.js"></script>
