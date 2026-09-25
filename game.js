@@ -2,11 +2,10 @@ const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;
 
-const W = canvas.width;
-const H = canvas.height;
-
-const keys = new Set();
-const heldDirections = new Set();
+const VIEW_W = canvas.width;
+const VIEW_H = canvas.height;
+const WORLD_W = 1500;
+const WORLD_H = 2300;
 
 const assets = {
   pumpkin: loadAsset('assets/pumpkin.svg'),
@@ -18,7 +17,6 @@ const assets = {
   haybale: loadAsset('assets/haybale.svg'),
   scarecrow: loadAsset('assets/scarecrow.svg'),
   wagon: loadAsset('assets/wagon.svg'),
-  player: loadAsset('assets/player.svg'),
 };
 
 function loadAsset(src) {
@@ -43,22 +41,19 @@ const game = {
   pumpkins: 0,
   messageTimer: 0,
   lastTime: 0,
-  ended: false,
 };
 
-const player = {
-  x: 475,
-  y: 392,
-  speed: 180,
-  radius: 12,
+const camera = {
+  x: 500,
+  y: 770,
 };
 
-const farm = { x: 75, y: 145, w: 400, h: 285 };
-const field = { x: 110, y: 190, w: 305, h: 190 };
-const stand = { x: 675, y: 206, w: 175, h: 110 };
-const house = { x: 535, y: 150, w: 135, h: 105 };
-const barn = { x: 715, y: 350, w: 135, h: 95 };
-const path = { x: 0, y: 430, w: W, h: 95 };
+const farm = { x: 110, y: 400, w: 590, h: 560 };
+const field = { x: 160, y: 480, w: 490, h: 365 };
+const stand = { x: 900, y: 560, w: 310, h: 180 };
+const house = { x: 840, y: 255, w: 245, h: 200 };
+const barn = { x: 1060, y: 1020, w: 250, h: 185 };
+const path = { x: 0, y: 1810, w: WORLD_W, h: 320 };
 
 const pumpkins = [];
 const grassBlobs = [];
@@ -67,35 +62,40 @@ const decorations = [];
 
 function rand(min, max) { return Math.random() * (max - min) + min; }
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
-function distance(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+function worldFromScreen(clientX, clientY) {
+  const rect = canvas.getBoundingClientRect();
+  const sx = (clientX - rect.left) * VIEW_W / rect.width;
+  const sy = (clientY - rect.top) * VIEW_H / rect.height;
+  return { x: sx + camera.x - VIEW_W / 2, y: sy + camera.y - VIEW_H / 2 };
+}
 
 function makeWorld() {
-  for (let i = 0; i < 220; i++) {
-    grassBlobs.push({ x: rand(0, W), y: rand(0, H), s: rand(1, 4), a: rand(.12, .3) });
+  for (let i = 0; i < 650; i++) {
+    grassBlobs.push({ x: rand(0, WORLD_W), y: rand(0, WORLD_H), s: rand(1, 5), a: rand(.08, .24) });
   }
 
-  for (let i = 0; i < 20; i++) {
-    let x = rand(30, W - 30);
-    let y = rand(65, 405);
-    if (x > farm.x - 30 && x < farm.x + farm.w + 30 && y > farm.y - 30 && y < farm.y + farm.h + 30) continue;
-    if (x > stand.x - 40 && x < stand.x + stand.w + 40 && y > stand.y - 40 && y < stand.y + stand.h + 40) continue;
-    trees.push({ x, y, r: rand(16, 24), tone: Math.random() });
+  for (let i = 0; i < 58; i++) {
+    let x = rand(45, WORLD_W - 45);
+    let y = rand(100, WORLD_H - 120);
+    if (x > farm.x - 70 && x < farm.x + farm.w + 70 && y > farm.y - 70 && y < farm.y + farm.h + 70) continue;
+    if (x > stand.x - 90 && x < stand.x + stand.w + 90 && y > stand.y - 90 && y < stand.y + stand.h + 90) continue;
+    trees.push({ x, y, r: rand(25, 34) });
   }
 
   decorations.push(
-    { type: 'haybale', x: 505, y: 450, w: 58, h: 44 },
-    { type: 'haybale', x: 560, y: 455, w: 58, h: 44 },
-    { type: 'scarecrow', x: 128, y: 352, w: 52, h: 70 },
-    { type: 'wagon', x: 435, y: 451, w: 96, h: 64 },
+    { type: 'haybale', x: 770, y: 900, w: 82, h: 60 },
+    { type: 'haybale', x: 865, y: 905, w: 82, h: 60 },
+    { type: 'scarecrow', x: 220, y: 810, w: 72, h: 96 },
+    { type: 'wagon', x: 720, y: 1910, w: 140, h: 86 },
   );
 
-  for (let row = 0; row < 5; row++) {
-    for (let col = 0; col < 7; col++) {
+  for (let row = 0; row < 7; row++) {
+    for (let col = 0; col < 10; col++) {
       pumpkins.push({
-        x: field.x + 22 + col * 43 + (row % 2 ? 8 : 0),
-        y: field.y + 20 + row * 34,
+        x: field.x + 26 + col * 47 + (row % 2 ? 10 : 0),
+        y: field.y + 25 + row * 47,
         ready: true,
-        size: rand(.85, 1.12),
+        size: rand(.82, 1.18),
         variant: Math.random(),
       });
     }
@@ -121,91 +121,63 @@ function formatTime(minutes) {
   let hour = Math.floor(total / 60);
   const min = Math.floor(total % 60).toString().padStart(2, '0');
   const suffix = hour >= 12 ? 'PM' : 'AM';
-  hour = hour % 12;
+  hour %= 12;
   if (hour === 0) hour = 12;
   return `${hour}:${min} ${suffix}`;
 }
 
-function currentNearbyObject() {
+function pointInRect(point, rect, pad = 0) {
+  return point.x >= rect.x - pad && point.x <= rect.x + rect.w + pad && point.y >= rect.y - pad && point.y <= rect.y + rect.h + pad;
+}
+
+function interactAt(point) {
   let nearest = null;
   let nearestDistance = Infinity;
 
   for (const p of pumpkins) {
     if (!p.ready) continue;
-    const d = distance(player, p);
-    if (d < 30 && d < nearestDistance) {
-      nearest = { type: 'pumpkin', target: p };
+    const d = Math.hypot(point.x - p.x, point.y - p.y);
+    if (d < 48 && d < nearestDistance) {
+      nearest = p;
       nearestDistance = d;
     }
   }
 
-  const sellPoint = { x: stand.x + stand.w / 2, y: stand.y + stand.h + 16 };
-  const sellDistance = distance(player, sellPoint);
-  if (sellDistance < 60 && sellDistance < nearestDistance) {
-    nearest = { type: 'sell' };
-    nearestDistance = sellDistance;
-  }
-
-  return nearest;
-}
-
-function interact() {
-  const nearby = currentNearbyObject();
-  if (!nearby) return;
-
-  if (nearby.type === 'pumpkin') {
-    nearby.target.ready = false;
+  if (nearest) {
+    nearest.ready = false;
     game.pumpkins += 1;
     setMessage('You harvested a pumpkin.');
+    updateHud();
+    return true;
   }
 
-  if (nearby.type === 'sell') {
+  if (pointInRect(point, stand, 70)) {
     if (game.pumpkins <= 0) {
       setMessage('You have no pumpkins to sell.');
-      return;
+      return true;
     }
     const earnings = game.pumpkins * 4;
-    game.money += earnings;
     const sold = game.pumpkins;
+    game.money += earnings;
     game.pumpkins = 0;
     setMessage(`Sold ${sold} pumpkin${sold === 1 ? '' : 's'} for $${earnings}.`);
+    updateHud();
+    return true;
   }
 
-  updateHud();
+  return false;
 }
 
 function resetDay() {
   game.day += 1;
   game.minutes = 8 * 60;
   for (const p of pumpkins) p.ready = true;
-  player.x = 475;
-  player.y = 392;
+  camera.x = 500;
+  camera.y = 770;
   setMessage(`Day ${game.day}. The patch is open again.`);
 }
 
 function update(dt) {
-  if (game.ended) return;
-
-  let dx = 0;
-  let dy = 0;
-
-  if (keys.has('w') || keys.has('arrowup') || heldDirections.has('up')) dy -= 1;
-  if (keys.has('s') || keys.has('arrowdown') || heldDirections.has('down')) dy += 1;
-  if (keys.has('a') || keys.has('arrowleft') || heldDirections.has('left')) dx -= 1;
-  if (keys.has('d') || keys.has('arrowright') || heldDirections.has('right')) dx += 1;
-
-  if (dx || dy) {
-    const length = Math.hypot(dx, dy);
-    dx /= length;
-    dy /= length;
-    player.x += dx * player.speed * dt;
-    player.y += dy * player.speed * dt;
-  }
-
-  player.x = clamp(player.x, 22, W - 22);
-  player.y = clamp(player.y, 70, H - 24);
-
-  // Simple time progression: one in-game minute every 0.65 real seconds.
   game.minutes += dt * (1 / 0.65);
   if (game.minutes >= 22 * 60) resetDay();
 
@@ -214,122 +186,142 @@ function update(dt) {
     if (game.messageTimer <= 0) document.getElementById('message').classList.remove('show');
   }
 
-  const nearby = currentNearbyObject();
-  const hint = document.getElementById('interact-hint');
-  hint.classList.toggle('show', !!nearby);
-  if (nearby?.type === 'pumpkin') hint.textContent = 'Press E to pick pumpkin';
-  else if (nearby?.type === 'sell') hint.textContent = 'Press E to sell pumpkins';
-
+  camera.x = clamp(camera.x, VIEW_W / 2, WORLD_W - VIEW_W / 2);
+  camera.y = clamp(camera.y, VIEW_H / 2, WORLD_H - VIEW_H / 2);
   updateHud();
 }
 
 function drawBackground() {
   const night = game.minutes >= 19 * 60;
-  const sky = ctx.createLinearGradient(0, 0, 0, H);
+  const sky = ctx.createLinearGradient(0, 0, 0, VIEW_H);
   if (night) {
-    sky.addColorStop(0, '#253046');
-    sky.addColorStop(1, '#4d5247');
+    sky.addColorStop(0, '#2a3045');
+    sky.addColorStop(1, '#4d5047');
   } else {
-    sky.addColorStop(0, '#89a86f');
-    sky.addColorStop(1, '#728e58');
+    sky.addColorStop(0, '#9aae77');
+    sky.addColorStop(1, '#718b55');
   }
   ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
   for (const b of grassBlobs) {
-    ctx.fillStyle = night ? `rgba(30,40,25,${b.a})` : `rgba(42,64,30,${b.a})`;
-    ctx.fillRect(Math.round(b.x), Math.round(b.y), b.s, b.s);
+    const sx = b.x - camera.x + VIEW_W / 2;
+    const sy = b.y - camera.y + VIEW_H / 2;
+    if (sx < -8 || sy < -8 || sx > VIEW_W + 8 || sy > VIEW_H + 8) continue;
+    ctx.fillStyle = night ? `rgba(27,34,24,${b.a})` : `rgba(43,61,31,${b.a})`;
+    ctx.fillRect(Math.round(sx), Math.round(sy), b.s, b.s);
   }
 
   for (const t of trees) {
-    const scale = (t.r / 22);
-    drawAsset(assets.tree, t.x, t.y + 7, 70 * scale, 82 * scale);
+    const sx = t.x - camera.x + VIEW_W / 2;
+    const sy = t.y - camera.y + VIEW_H / 2;
+    if (sx < -70 || sy < -90 || sx > VIEW_W + 70 || sy > VIEW_H + 90) continue;
+    const scale = t.r / 29;
+    drawAsset(assets.tree, sx, sy + 7, 92 * scale, 108 * scale);
+  }
+}
+
+function drawWorldRect(rect, fill, stroke = null) {
+  const x = rect.x - camera.x + VIEW_W / 2;
+  const y = rect.y - camera.y + VIEW_H / 2;
+  ctx.fillStyle = fill;
+  ctx.fillRect(x, y, rect.w, rect.h);
+  if (stroke) {
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(x, y, rect.w, rect.h);
   }
 }
 
 function drawBuilding(rect, kind, label) {
-  const img = assets[kind];
-  const cx = rect.x + rect.w / 2;
-  const cy = rect.y + rect.h / 2 + 2;
-  if (!drawAsset(img, cx, cy, rect.w + 30, rect.h + 30)) {
-    ctx.fillStyle = '#9b714e';
-    ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+  const cx = rect.x + rect.w / 2 - camera.x + VIEW_W / 2;
+  const cy = rect.y + rect.h / 2 + 2 - camera.y + VIEW_H / 2;
+  if (!drawAsset(assets[kind], cx, cy, rect.w + 50, rect.h + 50)) {
+    drawWorldRect(rect, '#9b714e');
   }
   ctx.fillStyle = '#f5ddb3';
-  ctx.font = '12px Georgia';
+  ctx.font = '15px Georgia';
   ctx.textAlign = 'center';
-  ctx.fillText(label, cx, rect.y + rect.h + 17);
+  ctx.fillText(label, cx, rect.y + rect.h + 26 - camera.y + VIEW_H / 2);
   ctx.textAlign = 'left';
 }
 
 function drawFarm() {
-  ctx.fillStyle = '#8b6a47';
-  ctx.fillRect(farm.x, farm.y, farm.w, farm.h);
-  ctx.strokeStyle = 'rgba(74,48,28,.42)';
-  ctx.lineWidth = 3;
-  ctx.strokeRect(farm.x, farm.y, farm.w, farm.h);
+  drawWorldRect(farm, '#8b6a47', 'rgba(74,48,28,.42)');
+  drawWorldRect(field, '#6d5035');
 
-  ctx.fillStyle = '#6d5035';
-  ctx.fillRect(field.x, field.y, field.w, field.h);
-
-  for (let row = 0; row < 5; row++) {
+  for (let row = 0; row < 7; row++) {
+    const y = field.y + 36 + row * 47 - camera.y + VIEW_H / 2;
     ctx.fillStyle = 'rgba(46,31,19,.28)';
-    ctx.fillRect(field.x, field.y + 28 + row * 34, field.w, 3);
+    ctx.fillRect(field.x - camera.x + VIEW_W / 2, y, field.w, 3);
   }
 
   for (const p of pumpkins) {
     if (!p.ready) continue;
-    const img = p.variant > .8 ? assets.pumpkinGold : assets.pumpkin;
-    const size = 30 * p.size;
-    drawAsset(img, p.x, p.y, size, size * .9);
+    const sx = p.x - camera.x + VIEW_W / 2;
+    const sy = p.y - camera.y + VIEW_H / 2;
+    if (sx < -50 || sy < -50 || sx > VIEW_W + 50 || sy > VIEW_H + 50) continue;
+    const img = p.variant > .84 ? assets.pumpkinGold : assets.pumpkin;
+    const size = 42 * p.size;
+    drawAsset(img, sx, sy, size, size * .9);
   }
 
-  ctx.fillStyle = '#9d875d';
-  for (let x = farm.x + 8; x < farm.x + farm.w; x += 30) {
-    ctx.fillRect(x, farm.y - 8, 6, 12);
-    ctx.fillRect(x, farm.y + farm.h - 4, 6, 12);
+  const left = farm.x - camera.x + VIEW_W / 2;
+  const top = farm.y - camera.y + VIEW_H / 2;
+  for (let x = farm.x + 8; x < farm.x + farm.w; x += 35) {
+    ctx.fillStyle = '#9d875d';
+    ctx.fillRect(x - camera.x + VIEW_W / 2, top - 10, 7, 15);
+    ctx.fillRect(x - camera.x + VIEW_W / 2, top + farm.h - 5, 7, 15);
   }
 }
 
 function drawFestivalStand() {
-  const cx = stand.x + stand.w / 2;
-  const cy = stand.y + stand.h / 2 + 2;
-  if (!drawAsset(assets.stand, cx, cy, stand.w + 35, stand.h + 25)) {
-    ctx.fillStyle = '#b66f42';
-    ctx.fillRect(stand.x, stand.y, stand.w, stand.h);
-  }
+  const cx = stand.x + stand.w / 2 - camera.x + VIEW_W / 2;
+  const cy = stand.y + stand.h / 2 + 2 - camera.y + VIEW_H / 2;
+  drawAsset(assets.stand, cx, cy, stand.w + 55, stand.h + 40);
+  ctx.fillStyle = '#f5ddb3';
+  ctx.font = '16px Georgia';
+  ctx.textAlign = 'center';
+  ctx.fillText('PUMPKIN STAND', cx, stand.y + stand.h + 28 - camera.y + VIEW_H / 2);
+  ctx.font = '12px Georgia';
+  ctx.fillStyle = '#d9c09f';
+  ctx.fillText('Tap to sell', cx, stand.y + stand.h + 46 - camera.y + VIEW_H / 2);
+  ctx.textAlign = 'left';
 }
 
 function drawPath() {
-  ctx.fillStyle = '#a58d67';
-  ctx.fillRect(path.x, path.y, path.w, path.h);
-  for (let x = 0; x < W; x += 55) {
+  drawWorldRect(path, '#a58d67');
+  for (let x = 0; x < WORLD_W; x += 70) {
     ctx.fillStyle = 'rgba(78,57,34,.13)';
-    ctx.fillRect(x + 12, path.y + 24 + (x % 3) * 8, 22, 5);
-  }
-}
-
-function drawPlayer() {
-  if (!drawAsset(assets.player, player.x, player.y - 1, 34, 48)) {
-    ctx.fillStyle = '#7a4831';
-    ctx.fillRect(player.x - 8, player.y - 8, 16, 20);
+    ctx.fillRect(x - camera.x + VIEW_W / 2 + 14, path.y - camera.y + VIEW_H / 2 + 28 + (x % 3) * 10, 28, 5);
   }
 }
 
 function drawDecorations() {
   for (const d of decorations) {
-    const asset = assets[d.type];
-    drawAsset(asset, d.x, d.y, d.w, d.h);
+    const sx = d.x - camera.x + VIEW_W / 2;
+    const sy = d.y - camera.y + VIEW_H / 2;
+    drawAsset(assets[d.type], sx, sy, d.w, d.h);
   }
+}
+
+function drawZoneLabels() {
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(245,221,179,.76)';
+  ctx.font = '18px Georgia';
+  const patchX = farm.x + farm.w / 2 - camera.x + VIEW_W / 2;
+  const patchY = farm.y - 20 - camera.y + VIEW_H / 2;
+  ctx.fillText('PUMPKIN PATCH', patchX, patchY);
+  ctx.textAlign = 'left';
 }
 
 function drawLighting() {
   const evening = Math.max(0, (game.minutes - 17 * 60) / (2 * 60));
   const night = game.minutes >= 19 * 60;
-  let alpha = night ? .43 : evening * .2;
+  const alpha = night ? .43 : evening * .2;
   if (alpha <= 0) return;
   ctx.fillStyle = `rgba(15,19,34,${alpha})`;
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 }
 
 function draw() {
@@ -340,39 +332,57 @@ function draw() {
   drawBuilding(barn, 'barn', 'BARN');
   drawFestivalStand();
   drawDecorations();
-  drawPlayer();
+  drawZoneLabels();
   drawLighting();
-
-  const nearby = currentNearbyObject();
-  if (nearby?.type === 'pumpkin') {
-    ctx.strokeStyle = 'rgba(255,236,191,.8)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(nearby.target.x, nearby.target.y, 15, 0, Math.PI * 2);
-    ctx.stroke();
-  }
 }
 
-window.addEventListener('keydown', (e) => {
-  const key = e.key.toLowerCase();
-  if (['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','e'].includes(key)) e.preventDefault();
-  keys.add(key);
-  if (key === 'e' && !e.repeat) interact();
+let gesture = null;
+canvas.addEventListener('pointerdown', (e) => {
+  gesture = {
+    id: e.pointerId,
+    startX: e.clientX,
+    startY: e.clientY,
+    lastX: e.clientX,
+    lastY: e.clientY,
+    moved: false,
+  };
+  canvas.setPointerCapture(e.pointerId);
 });
 
-window.addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
+canvas.addEventListener('pointermove', (e) => {
+  if (!gesture || e.pointerId !== gesture.id) return;
+  const dx = e.clientX - gesture.lastX;
+  const dy = e.clientY - gesture.lastY;
+  if (Math.hypot(e.clientX - gesture.startX, e.clientY - gesture.startY) > 8) gesture.moved = true;
+  camera.x -= dx * VIEW_W / canvas.getBoundingClientRect().width;
+  camera.y -= dy * VIEW_H / canvas.getBoundingClientRect().height;
+  gesture.lastX = e.clientX;
+  gesture.lastY = e.clientY;
+});
 
-for (const button of document.querySelectorAll('.control')) {
-  const dir = button.dataset.dir;
-  const start = (e) => { e.preventDefault(); heldDirections.add(dir); };
-  const end = (e) => { e.preventDefault(); heldDirections.delete(dir); };
-  button.addEventListener('pointerdown', start);
-  button.addEventListener('pointerup', end);
-  button.addEventListener('pointercancel', end);
-  button.addEventListener('pointerleave', end);
-}
+canvas.addEventListener('pointerup', (e) => {
+  if (!gesture || e.pointerId !== gesture.id) return;
+  if (!gesture.moved) interactAt(worldFromScreen(e.clientX, e.clientY));
+  gesture = null;
+});
 
-canvas.addEventListener('pointerdown', () => canvas.focus());
+canvas.addEventListener('pointercancel', () => { gesture = null; });
+
+document.getElementById('focus-button').addEventListener('click', () => {
+  camera.x = 500;
+  camera.y = 770;
+  setMessage('Back at the pumpkin patch.');
+});
+
+window.addEventListener('keydown', (e) => {
+  const pan = 80;
+  if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') camera.x -= pan;
+  if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') camera.x += pan;
+  if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'w') camera.y -= pan;
+  if (e.key === 'ArrowDown' || e.key.toLowerCase() === 's') camera.y += pan;
+  camera.x = clamp(camera.x, VIEW_W / 2, WORLD_W - VIEW_W / 2);
+  camera.y = clamp(camera.y, VIEW_H / 2, WORLD_H - VIEW_H / 2);
+});
 
 function loop(timestamp) {
   const dt = Math.min(.04, (timestamp - game.lastTime) / 1000 || 0);
@@ -384,5 +394,5 @@ function loop(timestamp) {
 
 makeWorld();
 updateHud();
-setMessage('The patch is open. Pick pumpkins and sell them at the stand.');
+setMessage('The patch is open. Swipe around and tap a pumpkin to harvest it.');
 requestAnimationFrame(loop);
