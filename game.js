@@ -8,6 +8,34 @@ const H = canvas.height;
 const keys = new Set();
 const heldDirections = new Set();
 
+const assets = {
+  pumpkin: loadAsset('assets/pumpkin.svg'),
+  pumpkinGold: loadAsset('assets/pumpkin-gold.svg'),
+  tree: loadAsset('assets/tree.svg'),
+  house: loadAsset('assets/house.svg'),
+  barn: loadAsset('assets/barn.svg'),
+  stand: loadAsset('assets/stand.svg'),
+  haybale: loadAsset('assets/haybale.svg'),
+  scarecrow: loadAsset('assets/scarecrow.svg'),
+  wagon: loadAsset('assets/wagon.svg'),
+  player: loadAsset('assets/player.svg'),
+};
+
+function loadAsset(src) {
+  const img = new Image();
+  img.src = src;
+  return img;
+}
+
+function drawAsset(img, x, y, w, h, alpha = 1) {
+  if (!img.complete || !img.naturalWidth) return false;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.drawImage(img, Math.round(x - w / 2), Math.round(y - h / 2), w, h);
+  ctx.restore();
+  return true;
+}
+
 const game = {
   day: 1,
   minutes: 8 * 60,
@@ -35,6 +63,7 @@ const path = { x: 0, y: 430, w: W, h: 95 };
 const pumpkins = [];
 const grassBlobs = [];
 const trees = [];
+const decorations = [];
 
 function rand(min, max) { return Math.random() * (max - min) + min; }
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
@@ -52,6 +81,13 @@ function makeWorld() {
     if (x > stand.x - 40 && x < stand.x + stand.w + 40 && y > stand.y - 40 && y < stand.y + stand.h + 40) continue;
     trees.push({ x, y, r: rand(16, 24), tone: Math.random() });
   }
+
+  decorations.push(
+    { type: 'haybale', x: 505, y: 450, w: 58, h: 44 },
+    { type: 'haybale', x: 560, y: 455, w: 58, h: 44 },
+    { type: 'scarecrow', x: 128, y: 352, w: 52, h: 70 },
+    { type: 'wagon', x: 435, y: 451, w: 96, h: 64 },
+  );
 
   for (let row = 0; row < 5; row++) {
     for (let col = 0; col < 7; col++) {
@@ -206,34 +242,23 @@ function drawBackground() {
   }
 
   for (const t of trees) {
-    ctx.fillStyle = '#725338';
-    ctx.fillRect(t.x - 4, t.y + 8, 8, 18);
-    const leaf = t.tone > .5 ? '#6f713d' : '#866640';
-    ctx.fillStyle = leaf;
-    ctx.beginPath();
-    ctx.arc(t.x, t.y, t.r, 0, Math.PI * 2);
-    ctx.fill();
+    const scale = (t.r / 22);
+    drawAsset(assets.tree, t.x, t.y + 7, 70 * scale, 82 * scale);
   }
 }
 
-function drawBuilding(rect, roofColor, wallColor, label) {
-  ctx.fillStyle = 'rgba(20, 15, 10, .22)';
-  ctx.fillRect(rect.x + 7, rect.y + 7, rect.w, rect.h);
-  ctx.fillStyle = wallColor;
-  ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
-  ctx.fillStyle = roofColor;
-  ctx.beginPath();
-  ctx.moveTo(rect.x - 7, rect.y);
-  ctx.lineTo(rect.x + rect.w / 2, rect.y - 35);
-  ctx.lineTo(rect.x + rect.w + 7, rect.y);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = '#3d291f';
-  ctx.fillRect(rect.x + rect.w / 2 - 14, rect.y + rect.h - 52, 28, 52);
+function drawBuilding(rect, kind, label) {
+  const img = assets[kind];
+  const cx = rect.x + rect.w / 2;
+  const cy = rect.y + rect.h / 2 + 2;
+  if (!drawAsset(img, cx, cy, rect.w + 30, rect.h + 30)) {
+    ctx.fillStyle = '#9b714e';
+    ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+  }
   ctx.fillStyle = '#f5ddb3';
   ctx.font = '12px Georgia';
   ctx.textAlign = 'center';
-  ctx.fillText(label, rect.x + rect.w / 2, rect.y + rect.h + 16);
+  ctx.fillText(label, cx, rect.y + rect.h + 17);
   ctx.textAlign = 'left';
 }
 
@@ -254,13 +279,9 @@ function drawFarm() {
 
   for (const p of pumpkins) {
     if (!p.ready) continue;
-    const s = 10 * p.size;
-    ctx.fillStyle = p.variant > .8 ? '#d9ad5e' : '#c97d2e';
-    ctx.beginPath();
-    ctx.ellipse(p.x, p.y, s, s * .76, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#6e5129';
-    ctx.fillRect(p.x - 1.5, p.y - s - 2, 3, 5);
+    const img = p.variant > .8 ? assets.pumpkinGold : assets.pumpkin;
+    const size = 30 * p.size;
+    drawAsset(img, p.x, p.y, size, size * .9);
   }
 
   ctx.fillStyle = '#9d875d';
@@ -271,23 +292,12 @@ function drawFarm() {
 }
 
 function drawFestivalStand() {
-  ctx.fillStyle = 'rgba(20,15,10,.25)';
-  ctx.fillRect(stand.x + 8, stand.y + 9, stand.w, stand.h);
-  ctx.fillStyle = '#b66f42';
-  ctx.fillRect(stand.x, stand.y, stand.w, stand.h);
-  ctx.fillStyle = '#6f3c2b';
-  ctx.fillRect(stand.x - 5, stand.y - 18, stand.w + 10, 26);
-  ctx.fillStyle = '#e3c48d';
-  for (let i = 0; i < 7; i++) {
-    ctx.fillRect(stand.x + i * 26, stand.y - 18, 13, 26);
+  const cx = stand.x + stand.w / 2;
+  const cy = stand.y + stand.h / 2 + 2;
+  if (!drawAsset(assets.stand, cx, cy, stand.w + 35, stand.h + 25)) {
+    ctx.fillStyle = '#b66f42';
+    ctx.fillRect(stand.x, stand.y, stand.w, stand.h);
   }
-  ctx.fillStyle = '#fff0d3';
-  ctx.font = 'bold 15px Georgia';
-  ctx.textAlign = 'center';
-  ctx.fillText('PUMPKIN STAND', stand.x + stand.w / 2, stand.y + 43);
-  ctx.font = '12px Georgia';
-  ctx.fillText('$4 each', stand.x + stand.w / 2, stand.y + 65);
-  ctx.textAlign = 'left';
 }
 
 function drawPath() {
@@ -300,25 +310,17 @@ function drawPath() {
 }
 
 function drawPlayer() {
-  ctx.fillStyle = 'rgba(0,0,0,.2)';
-  ctx.beginPath();
-  ctx.ellipse(player.x, player.y + 10, 13, 6, 0, 0, Math.PI * 2);
-  ctx.fill();
+  if (!drawAsset(assets.player, player.x, player.y - 1, 34, 48)) {
+    ctx.fillStyle = '#7a4831';
+    ctx.fillRect(player.x - 8, player.y - 8, 16, 20);
+  }
+}
 
-  ctx.fillStyle = '#f3d1b1';
-  ctx.beginPath();
-  ctx.arc(player.x, player.y - 7, 8, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = '#3d2c22';
-  ctx.fillRect(player.x - 8, player.y - 16, 16, 4);
-  ctx.fillRect(player.x - 5, player.y - 20, 10, 5);
-
-  ctx.fillStyle = '#7a4831';
-  ctx.fillRect(player.x - 8, player.y + 1, 16, 15);
-  ctx.fillStyle = '#42302b';
-  ctx.fillRect(player.x - 8, player.y + 15, 6, 7);
-  ctx.fillRect(player.x + 2, player.y + 15, 6, 7);
+function drawDecorations() {
+  for (const d of decorations) {
+    const asset = assets[d.type];
+    drawAsset(asset, d.x, d.y, d.w, d.h);
+  }
 }
 
 function drawLighting() {
@@ -334,9 +336,10 @@ function draw() {
   drawBackground();
   drawPath();
   drawFarm();
-  drawBuilding(house, '#6d4031', '#b98d61', 'HOUSE');
-  drawBuilding(barn, '#594536', '#99683f', 'BARN');
+  drawBuilding(house, 'house', 'HOUSE');
+  drawBuilding(barn, 'barn', 'BARN');
   drawFestivalStand();
+  drawDecorations();
   drawPlayer();
   drawLighting();
 
