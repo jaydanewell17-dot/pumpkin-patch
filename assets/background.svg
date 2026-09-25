@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760">
+<defs>
+  <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#eef0df"/><stop offset="1" stop-color="#d2d9bd"/></linearGradient>
+  <linearGradient id="meadow" x2="0" y2="1"><stop stop-color="#aebd9d"/><stop offset="1" stop-color="#758566"/></linearGradient>
+  <linearGradient id="path" x2="1" y2=".2"><stop stop-color="#b79c78"/><stop offset="1" stop-color="#95775d"/></linearGradient>
+  <pattern id="grain" width="34" height="34" patternUnits="userSpaceOnUse"><path d="M4 18c7-8 13-8 19 0M17 30c5-5 8-5 13 0" fill="none" stroke="#6e7e61" stroke-width="2" opacity=".22"/></pattern>
+  <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#4d4439" flood-opacity=".20"/></filter>
+</defs>
+<rect width="1200" height="760" fill="url(#sky)"/>
+<path d="M0 185Q120 95 260 165T530 150T810 170T1200 120V260H0Z" fill="#a9b49a" opacity=".72"/>
+<path d="M0 245Q155 175 315 235t310-8 310 22 265-42v553H0Z" fill="url(#meadow)"/>
+<path d="M0 245Q155 175 315 235t310-8 310 22 265-42" fill="none" stroke="#66765b" stroke-width="8" opacity=".18"/>
+<path d="M325 760C415 670 430 575 485 510S650 370 760 320 930 250 1200 215V760Z" fill="url(#path)" opacity=".9" filter="url(#shadow)"/>
+<path d="M355 760C454 667 470 584 528 528S680 402 775 356 935 286 1200 245" fill="none" stroke="#d1b893" stroke-width="12" opacity=".32"/>
+<!-- fence -->
+<g stroke="#5f493b" stroke-width="11" stroke-linecap="round"><path d="M20 690H360"/><path d="M45 660v65M130 660v65M215 660v65M300 660v65"/></g>
+<g fill="#9d805f" stroke="#5f493b" stroke-width="6"><path d="M34 675l12-38 25 0 10 38Z"/><path d="M119 675l12-38 25 0 10 38Z"/><path d="M204 675l12-38 25 0 10 38Z"/><path d="M289 675l12-38 25 0 10 38Z"/></g>
+<!-- grass texture and scattered ground details -->
+<g fill="#5e7054" opacity=".8"><circle cx="430" cy="680" r="5"/><circle cx="470" cy="705" r="4"/><circle cx="785" cy="625" r="5"/><circle cx="815" cy="650" r="4"/><circle cx="1080" cy="690" r="5"/></g>
+<g fill="#8e9d78" opacity=".72"><path d="M515 695q25-24 50 0-25-5-50 0Z"/><path d="M1110 635q25-24 50 0-25-5-50 0Z"/><path d="M585 300q21-20 42 0-21-4-42 0Z"/></g>
+<!-- fallen leaves -->
+<g opacity=".92"><path d="M630 155q-26-35-57-11 11 39 45 41Z" fill="#a86f52" stroke="#67483c" stroke-width="4"/><path d="M720 190q-23-29-50-4 10 33 39 38Z" fill="#bf8562" stroke="#704e40" stroke-width="4"/><path d="M1020 260q-23-31-51-6 8 34 39 37Z" fill="#8e7659" stroke="#665241" stroke-width="4"/></g>
+<rect width="1200" height="760" fill="url(#grain)" opacity=".6"/>
+</svg>
