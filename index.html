@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pumpkin Patch</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="game">
+    <header class="topbar">
+      <div>
+        <div class="brand">Pumpkin Patch</div>
+        <div id="dateLine">September 25 · Early Fall</div>
+      </div>
+      <div class="stats">
+        <span id="money">$500</span>
+        <span id="time">7:12 AM</span>
+        <span id="weather">☀ 68°F</span>
+      </div>
+    </header>
+
+    <main>
+      <section id="world" class="screen active">
+        <div class="scene">
+          <div class="sky"></div>
+          <div class="sun">☀</div>
+          <div class="cloud c1"></div><div class="cloud c2"></div>
+          <div class="hill"></div>
+          <div class="tree t1">🍁</div><div class="tree t2">🌳</div><div class="tree t3">🍂</div>
+          <div class="farmhouse" data-action="house">🏡</div>
+          <div class="field" id="field"></div>
+          <div class="road"></div>
+          <button class="location-btn house-btn" data-action="house">House</button>
+          <button class="location-btn farm-btn" data-action="farm">Farm</button>
+          <button class="location-btn festival-btn" data-action="festival">Fall Festival</button>
+          <button class="location-btn forest-btn" data-action="forest">Forest</button>
+        </div>
+        <div class="event-card">
+          <div><strong>Today's events</strong></div>
+          <div>10:00 AM · Farmers Market</div>
+          <div>4:00 PM · Hayride</div>
+          <div>7:30 PM · Bonfire</div>
+        </div>
+      </section>
+
+      <section id="farm" class="screen">
+        <div class="panel">
+          <div class="panel-title">Your Pumpkin Patch</div>
+          <p class="muted">Plant seeds, let the weather work its magic, then harvest your pumpkins.</p>
+          <div id="farmGrid" class="farm-grid"></div>
+          <div class="actions">
+            <button id="seedBtn">Buy seed · $10</button>
+            <button id="plantBtn">Plant selected plot</button>
+            <button id="waterBtn">Water selected plot</button>
+            <button id="harvestBtn">Harvest selected plot</button>
+          </div>
+          <div id="farmMessage" class="message">Select a plot.</div>
+        </div>
+      </section>
+
+      <section id="festival" class="screen">
+        <div class="festival-scene">
+          <div class="festival-sign">FALL FESTIVAL</div>
+          <div class="booths">
+            <button data-game="apples">🍎<small>Apple Bobbing</small></button>
+            <button data-game="rings">🎯<small>Ring Toss</small></button>
+            <button data-game="pie">🥧<small>Pie Booth</small></button>
+            <button data-game="fortune">🔮<small>Fortune Tent</small></button>
+          </div>
+          <div class="bonfire">🔥</div>
+        </div>
+        <div id="festivalMessage" class="message">The festival is waking up. Try a booth.</div>
+      </section>
+
+      <section id="house" class="screen">
+        <div class="house-interior">
+          <div class="room-title">Your Farmhouse</div>
+          <div class="room-items">
+            <button data-house="kitchen">🍳<small>Kitchen</small></button>
+            <button data-house="journal">📖<small>Journal</small></button>
+            <button data-house="wardrobe">👕<small>Wardrobe</small></button>
+            <button data-house="sleep">🛏️<small>Sleep</small></button>
+          </div>
+          <div id="houseMessage" class="message">The house smells faintly like cinnamon.</div>
+        </div>
+      </section>
+
+      <section id="forest" class="screen">
+        <div class="forest-scene">
+          <div class="forest-copy">
+            <div class="panel-title">The Forest</div>
+            <p>Leaves crunch beneath your feet. There is a strange little path deeper in.</p>
+            <button id="searchForest">Look around</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav">
+      <button data-action="world">🏡<span>Town</span></button>
+      <button data-action="farm">🎃<span>Farm</span></button>
+      <button data-action="festival">🎪<span>Festival</span></button>
+      <button data-action="house">🪵<span>House</span></button>
+      <button data-action="forest">🌲<span>Forest</span></button>
+    </nav>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
